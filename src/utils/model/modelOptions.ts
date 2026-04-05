@@ -42,6 +42,18 @@ export type ModelOption = {
   descriptionForModel?: string
 }
 
+function parseCustomModelOptionsEnv(): string[] {
+  const raw = process.env.ANTHROPIC_CUSTOM_MODEL_OPTIONS
+  if (!raw) {
+    return []
+  }
+
+  return raw
+    .split(/[,\n]/)
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
 export function getDefaultOptionForUser(fastMode = false): ModelOption {
   if (process.env.USER_TYPE === 'ant') {
     const currentModel = renderDefaultModelSetting(
@@ -461,18 +473,29 @@ function getKnownModelOption(model: string): ModelOption | null {
 export function getModelOptions(fastMode = false): ModelOption[] {
   const options = getModelOptionsBase(fastMode)
 
-  // Add the custom model from the ANTHROPIC_CUSTOM_MODEL_OPTION env var
-  const envCustomModel = process.env.ANTHROPIC_CUSTOM_MODEL_OPTION
-  if (
-    envCustomModel &&
-    !options.some(existing => existing.value === envCustomModel)
-  ) {
+  const envCustomModels = [
+    ...parseCustomModelOptionsEnv(),
+    ...(process.env.ANTHROPIC_CUSTOM_MODEL_OPTION
+      ? [process.env.ANTHROPIC_CUSTOM_MODEL_OPTION]
+      : []),
+  ]
+
+  for (const envCustomModel of envCustomModels) {
+    if (options.some(existing => existing.value === envCustomModel)) {
+      continue
+    }
     options.push({
       value: envCustomModel,
-      label: process.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME ?? envCustomModel,
+      label:
+        envCustomModels.length === 1 &&
+        process.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME
+          ? process.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME
+          : envCustomModel,
       description:
-        process.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION ??
-        `Custom model (${envCustomModel})`,
+        envCustomModels.length === 1 &&
+        process.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION
+          ? process.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION
+          : `Custom model (${envCustomModel})`,
     })
   }
 

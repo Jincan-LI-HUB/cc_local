@@ -29,6 +29,17 @@ function shouldResetGeneratedLabel(label: string | undefined): boolean {
   )
 }
 
+function parseModelList(value: string | undefined): string[] {
+  if (!value) {
+    return []
+  }
+
+  return value
+    .split(/[,\n]/)
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
 async function filterToolCapableModels(models: string[]): Promise<string[]> {
   const supported: string[] = []
 
@@ -203,6 +214,13 @@ if (
 const providerEnv = {
   ...parseEnvFile(providerEnvFile),
 }
+providerEnv.OLLAMA_EXTRA_MODELS ??=
+  'deepseek-coder-v2:16b,deepseek-coder-v2:236b,qwen3.5:397b-cloud,minimax-m2.7:cloud'
+const extraConfiguredModels = parseModelList(providerEnv.OLLAMA_EXTRA_MODELS)
+const availableOllamaModels = Array.from(
+  new Set([...detectedModels, ...extraConfiguredModels]),
+)
+localEnv.ANTHROPIC_CUSTOM_MODEL_OPTIONS = availableOllamaModels.join(',')
 const legacyThinkLongContext = providerEnv.ROUTER_LONG_CONTEXT
 const shouldPreferToolCapableDefault =
   toolCapableModels.length > 0 &&
@@ -232,6 +250,7 @@ if (shouldPreferToolCapableGeneral) {
 } else {
   providerEnv.OLLAMA_GENERAL_MODEL ??= generalModel
 }
+providerEnv.OLLAMA_MODELS_JSON = JSON.stringify(availableOllamaModels)
 providerEnv.OPENAI_API_KEY ??= ''
 providerEnv.OPENAI_MODEL ??= 'gpt-4.1-mini'
 providerEnv.OPENAI_LONG_CONTEXT_MODEL ??= 'gpt-4.1'

@@ -8,7 +8,7 @@
       "name": "ollama",
       "api_base_url": "http://127.0.0.1:11434/v1/chat/completions",
       "api_key": "ollama",
-      "models": ["$OLLAMA_MODEL", "$OLLAMA_THINK_MODEL", "$OLLAMA_GENERAL_MODEL"]
+      "models": "$OLLAMA_MODELS_JSON"
     },
     {
       "name": "openai",

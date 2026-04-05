@@ -45,7 +45,21 @@ function resolveEnvPlaceholder(
     const bracedMatch = value.match(/^\$\{([A-Z0-9_]+)\}$/)
     const key = directMatch?.[1] ?? bracedMatch?.[1]
     if (key) {
-      return env[key] ?? value
+      const resolved = env[key]
+      if (resolved === undefined) {
+        return value
+      }
+      if (
+        (resolved.startsWith('[') && resolved.endsWith(']')) ||
+        (resolved.startsWith('{') && resolved.endsWith('}'))
+      ) {
+        try {
+          return JSON.parse(resolved)
+        } catch {
+          return resolved
+        }
+      }
+      return resolved
     }
 
     return value
@@ -369,12 +383,15 @@ export const localFirstEnvOrder = [
   'ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME',
   'ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION',
   'ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES',
+  'ANTHROPIC_CUSTOM_MODEL_OPTIONS',
 ]
 
 export const providerEnvOrder = [
   'OLLAMA_MODEL',
   'OLLAMA_THINK_MODEL',
   'OLLAMA_GENERAL_MODEL',
+  'OLLAMA_EXTRA_MODELS',
+  'OLLAMA_MODELS_JSON',
   'OPENAI_API_KEY',
   'OPENAI_MODEL',
   'OPENAI_LONG_CONTEXT_MODEL',
