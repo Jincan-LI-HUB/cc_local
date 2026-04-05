@@ -151,6 +151,29 @@ Key file:
 
 - `src/components/LogoV2/LogoV2.tsx`
 
+### 7. Hardened one-command startup and simplified MCP management
+
+We tightened the local-first startup chain so `bun run dev:local-first` is more
+reliable on this Windows setup.
+
+Changes:
+
+- local-first startup now retries router bring-up instead of assuming one start
+  attempt is enough
+- the dev launcher now hands off to `start-local-first.ts` after router
+  readiness is confirmed
+- local-first `/mcp` now focuses on project MCPs and hides noisy built-in
+  plugin MCP entries from the interactive manager
+- full MCP diagnostics remain available via CLI
+
+Key files:
+
+- `scripts/dev-local-first.ts`
+- `src/components/mcp/MCPSettings.tsx`
+- `src/components/mcp/MCPListPanel.tsx`
+- `docs/local-first-operations.md`
+- `docs/mcp-desktop-import.md`
+
 ## Router and Model Strategy
 
 ### Frontend

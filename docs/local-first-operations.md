@@ -80,8 +80,15 @@ bun run dev:local-first
 
 1. 检查并补齐本地运行配置
 2. 同步 router 配置到 `C:\Users\lenovo\.claude-code-router\config.json`
-3. 启动或重启 `claude-code-router`
+3. 最多重试 3 次启动或重启 `claude-code-router`
 4. 启动本仓库前端
+
+如果 router 连续 3 次都没 ready，脚本会明确报错，并提示你改用：
+
+```powershell
+bun run router:start
+bun run start:local-first
+```
 
 ## 单轮测试
 
@@ -356,6 +363,13 @@ bun run router:status
 ollama list
 ```
 
+如果 `bun run dev:local-first` 卡在启动阶段，优先改用拆分启动：
+
+```powershell
+bun run router:start
+bun run start:local-first
+```
+
 ### 2. 改了 provider 配置却没生效
 
 重新启动 router：
@@ -370,7 +384,19 @@ bun run router:start
 bun run router:start:hybrid
 ```
 
-### 3. CCR 配置被覆盖
+### 3. `/mcp` 里看不到内建 plugin MCP
+
+这是 local-first 模式下的刻意行为。
+
+- `Manage MCP servers` 面板会优先只展示项目级 MCP
+- 内建 plugin MCP 会被隐藏，避免把项目 MCP 页面刷得很乱
+- 如果你要看完整 MCP 健康状态，请用：
+
+```powershell
+bun ./scripts/start-local-first.ts mcp list
+```
+
+### 4. CCR 配置被覆盖
 
 这是当前脚本的设计行为，因为 `ccr` 当前版本运行时主要依赖：
 
@@ -380,7 +406,7 @@ bun run router:start:hybrid
 
 - `C:\Users\lenovo\.claude-code-router\config.codex-backup.*.json`
 
-### 4. 想恢复到纯本地默认策略
+### 5. 想恢复到纯本地默认策略
 
 执行：
 

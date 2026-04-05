@@ -75,14 +75,11 @@ if (statusOnly) {
 }
 
 const healthUrl = `${getRouterUrl()}/api/config`
-const readyBeforeStart = await waitForHttpReady(healthUrl, 1000)
-
 if (daemonMode) {
-  const result = runCommand(
-    'ccr',
-    readyBeforeStart ? ['restart'] : ['start'],
-    { env, shell: true },
-  )
+  const result = runCommand('ccr', ['restart'], {
+    env,
+    shell: true,
+  })
   if (result.stdout.trim()) {
     console.log(result.stdout.trim())
   }
@@ -102,7 +99,7 @@ if (daemonMode) {
   process.exit(result.status ?? 0)
 }
 
-const child = spawnCommand('ccr', [readyBeforeStart ? 'restart' : 'start'], {
+const child = spawnCommand('ccr', ['restart'], {
   env,
   shell: true,
   stdio: 'inherit',

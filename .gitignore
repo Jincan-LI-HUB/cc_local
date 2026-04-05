@@ -5,6 +5,7 @@
 !.env.mcp.local.example
 router/claude-code-router/providers.local.env
 node_modules
+.claude/
 
 # Computer Use runtime (auto-generated)
 .runtime/

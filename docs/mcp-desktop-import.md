@@ -82,3 +82,18 @@ bun run dev:local-first
 
 Because `dev:local-first` and `start:local-first` now load `.env.mcp.local`,
 the imported MCP servers can use the migrated secrets automatically.
+
+## Local-First MCP UI Behavior
+
+In local-first mode, the interactive `/mcp` panel is intentionally focused on
+project MCPs imported into this repository.
+
+- project MCPs remain visible in the TUI manager
+- built-in plugin MCPs are hidden from that panel to reduce noise
+- full MCP diagnostics are still available from the CLI
+
+Use this when you want the full picture:
+
+```powershell
+bun ./scripts/start-local-first.ts mcp list
+```
