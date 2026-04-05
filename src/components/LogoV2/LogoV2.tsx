@@ -114,14 +114,22 @@ export function LogoV2() {
     t3 = $[4];
   }
   useEffect(t2, t3);
-  let t4;
-  if ($[5] === Symbol.for("react.memo_cache_sentinel")) {
-    t4 = isLocalFirstMode() || !hasReleaseNotes && !showOnboarding && !isEnvTruthy(process.env.CLAUDE_CODE_FORCE_FULL_LOGO);
-    $[5] = t4;
-  } else {
-    t4 = $[5];
-  }
-  const isCondensedMode = t4;
+  const isLocalFirst = isLocalFirstMode();
+  const [hasStableLocalFirstLayout, setHasStableLocalFirstLayout] = useState(() => !isLocalFirst);
+  useEffect(() => {
+    if (!isLocalFirst || hasStableLocalFirstLayout) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setHasStableLocalFirstLayout(true);
+    }, 180);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [columns, hasStableLocalFirstLayout, isLocalFirst]);
+  const defaultCondensedMode = !hasReleaseNotes && !showOnboarding && !isEnvTruthy(process.env.CLAUDE_CODE_FORCE_FULL_LOGO);
+  const shouldHoldCondensedDuringStartup = isLocalFirst && !hasStableLocalFirstLayout;
+  const isCondensedMode = shouldHoldCondensedDuringStartup || !isLocalFirst && defaultCondensedMode;
   let t5;
   let t6;
   if ($[6] !== showGuestPassesUpsell) {
