@@ -159,6 +159,7 @@ import { errorMessage, getErrnoCode, isENOENT, TeleportOperationError, toError }
 import { getFsImplementation, safeResolvePath } from 'src/utils/fsOperations.js';
 import { gracefulShutdown, gracefulShutdownSync } from 'src/utils/gracefulShutdown.js';
 import { setAllHookEventsEnabled } from 'src/utils/hooks/hookEvents.js';
+import { isLocalFirstMode } from 'src/utils/localFirst.js';
 import { refreshModelCapabilities } from 'src/utils/model/modelCapabilities.js';
 import { peekForStdinData, writeToStderr } from 'src/utils/process.js';
 import { setCwd } from 'src/utils/Shell.js';
@@ -415,8 +416,10 @@ export function startDeferredPrefetches(): void {
 
   // Analytics and feature flag initialization
   void initializeAnalyticsGates();
-  void prefetchOfficialMcpUrls();
-  void refreshModelCapabilities();
+  if (!isLocalFirstMode()) {
+    void prefetchOfficialMcpUrls();
+    void refreshModelCapabilities();
+  }
 
   // File change detectors deferred from init() to unblock first render
   void settingsChangeDetector.initialize();
@@ -1781,7 +1784,7 @@ async function run(): Promise<CommanderCommand> {
     // two-phase loading). Kicked off here to overlap with setup(); awaited
     // before runHeadless so single-turn -p sees connectors. Skipped under
     // enterprise/strict MCP to preserve policy boundaries.
-    const claudeaiConfigPromise: Promise<Record<string, ScopedMcpServerConfig>> = isNonInteractiveSession && !strictMcpConfig && !doesEnterpriseMcpConfigExist() &&
+    const claudeaiConfigPromise: Promise<Record<string, ScopedMcpServerConfig>> = !isLocalFirstMode() && isNonInteractiveSession && !strictMcpConfig && !doesEnterpriseMcpConfigExist() &&
     // --bare / SIMPLE: skip claude.ai proxy servers (datadog, Gmail,
     // Slack, BigQuery, PubMed — 6-14s each to connect). Scripted calls
     // that need MCP pass --mcp-config explicitly.
@@ -2919,7 +2922,7 @@ async function run(): Promise<CommanderCommand> {
     // All startup opt-in paths (--tools, --brief, defaultView) have fired
     // above; initialIsBriefOnly just reads the resulting state.
     const initialIsBriefOnly = feature('KAIROS') || feature('KAIROS_BRIEF') ? getUserMsgOptIn() : false;
-    const fullRemoteControl = remoteControl || getRemoteControlAtStartup() || kairosEnabled;
+    const fullRemoteControl = !isLocalFirstMode() && (remoteControl || getRemoteControlAtStartup() || kairosEnabled);
     let ccrMirrorEnabled = false;
     if (feature('CCR_MIRROR') && !fullRemoteControl) {
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -4103,43 +4106,45 @@ async function run(): Promise<CommanderCommand> {
 
   // claude auth
 
-  const auth = program.command('auth').description('Manage authentication').configureHelp(createSortedHelpConfig());
-  auth.command('login').description('Sign in to your Anthropic account').option('--email <email>', 'Pre-populate email address on the login page').option('--sso', 'Force SSO login flow').option('--console', 'Use Anthropic Console (API usage billing) instead of Claude subscription').option('--claudeai', 'Use Claude subscription (default)').action(async ({
-    email,
-    sso,
-    console: useConsole,
-    claudeai
-  }: {
-    email?: string;
-    sso?: boolean;
-    console?: boolean;
-    claudeai?: boolean;
-  }) => {
-    const {
-      authLogin
-    } = await import('./cli/handlers/auth.js');
-    await authLogin({
+  if (!isLocalFirstMode()) {
+    const auth = program.command('auth').description('Manage authentication').configureHelp(createSortedHelpConfig());
+    auth.command('login').description('Sign in to your Anthropic account').option('--email <email>', 'Pre-populate email address on the login page').option('--sso', 'Force SSO login flow').option('--console', 'Use Anthropic Console (API usage billing) instead of Claude subscription').option('--claudeai', 'Use Claude subscription (default)').action(async ({
       email,
       sso,
       console: useConsole,
       claudeai
+    }: {
+      email?: string;
+      sso?: boolean;
+      console?: boolean;
+      claudeai?: boolean;
+    }) => {
+      const {
+        authLogin
+      } = await import('./cli/handlers/auth.js');
+      await authLogin({
+        email,
+        sso,
+        console: useConsole,
+        claudeai
+      });
     });
-  });
-  auth.command('status').description('Show authentication status').option('--json', 'Output as JSON (default)').option('--text', 'Output as human-readable text').action(async (opts: {
-    json?: boolean;
-    text?: boolean;
-  }) => {
-    const {
-      authStatus
-    } = await import('./cli/handlers/auth.js');
-    await authStatus(opts);
-  });
-  auth.command('logout').description('Log out from your Anthropic account').action(async () => {
-    const {
-      authLogout
-    } = await import('./cli/handlers/auth.js');
-    await authLogout();
-  });
+    auth.command('status').description('Show authentication status').option('--json', 'Output as JSON (default)').option('--text', 'Output as human-readable text').action(async (opts: {
+      json?: boolean;
+      text?: boolean;
+    }) => {
+      const {
+        authStatus
+      } = await import('./cli/handlers/auth.js');
+      await authStatus(opts);
+    });
+    auth.command('logout').description('Log out from your Anthropic account').action(async () => {
+      const {
+        authLogout
+      } = await import('./cli/handlers/auth.js');
+      await authLogout();
+    });
+  }
 
   /**
    * Helper function to handle marketplace command errors consistently.
@@ -4270,15 +4275,17 @@ async function run(): Promise<CommanderCommand> {
   // END ANT-ONLY
 
   // Setup token command
-  program.command('setup-token').description('Set up a long-lived authentication token (requires Claude subscription)').action(async () => {
-    const [{
-      setupTokenHandler
-    }, {
-      createRoot
-    }] = await Promise.all([import('./cli/handlers/util.js'), import('./ink.js')]);
-    const root = await createRoot(getBaseRenderOptions(false));
-    await setupTokenHandler(root);
-  });
+  if (!isLocalFirstMode()) {
+    program.command('setup-token').description('Set up a long-lived authentication token (requires Claude subscription)').action(async () => {
+      const [{
+        setupTokenHandler
+      }, {
+        createRoot
+      }] = await Promise.all([import('./cli/handlers/util.js'), import('./ink.js')]);
+      const root = await createRoot(getBaseRenderOptions(false));
+      await setupTokenHandler(root);
+    });
+  }
 
   // Agents command - list configured agents
   program.command('agents').description('List configured agents').option('--setting-sources <sources>', 'Comma-separated list of setting sources to load (user, project, local).').action(async () => {
@@ -4365,12 +4372,14 @@ async function run(): Promise<CommanderCommand> {
   // - We perform exact string comparison (including SHA) to detect any change
   // - This ensures users always get the latest build, even when only the SHA changes
   // - UI shows both versions including build metadata for clarity
-  program.command('update').alias('upgrade').description('Check for updates and install if available').action(async () => {
-    const {
-      update
-    } = await import('src/cli/update.js');
-    await update();
-  });
+  if (!isLocalFirstMode()) {
+    program.command('update').alias('upgrade').description('Check for updates and install if available').action(async () => {
+      const {
+        update
+      } = await import('src/cli/update.js');
+      await update();
+    });
+  }
 
   // claude up — run the project's CLAUDE.md "# claude up" setup instructions.
   if ("external" === 'ant') {
@@ -4505,6 +4514,11 @@ Examples:
       } = await import('./cli/handlers/ant.js');
       await completionHandler(shell, opts, program);
     });
+  }
+  if (isLocalFirstMode()) {
+    for (const longName of ['--chrome', '--no-chrome']) {
+      program.options.find(option => option.long === longName)?.hideHelp();
+    }
   }
   profileCheckpoint('run_before_parse');
   await program.parseAsync(process.argv);

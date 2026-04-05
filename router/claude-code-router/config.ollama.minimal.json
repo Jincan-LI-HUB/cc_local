@@ -1,0 +1,23 @@
+{
+  "LOG": true,
+  "LOG_LEVEL": "debug",
+  "HOST": "127.0.0.1",
+  "PORT": 3456,
+  "APIKEY": "local-router",
+  "API_TIMEOUT_MS": 600000,
+  "Providers": [
+    {
+      "name": "ollama",
+      "api_base_url": "http://127.0.0.1:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": ["$OLLAMA_MODEL", "$OLLAMA_THINK_MODEL", "$OLLAMA_GENERAL_MODEL"]
+    }
+  ],
+  "Router": {
+    "default": "$ROUTER_DEFAULT",
+    "background": "$ROUTER_BACKGROUND",
+    "think": "$ROUTER_THINK",
+    "longContext": "$ROUTER_LONG_CONTEXT",
+    "longContextThreshold": 60000
+  }
+}

@@ -166,6 +166,7 @@ import {
 } from './utils/plugins/loadPluginCommands.js'
 import memoize from 'lodash-es/memoize.js'
 import { isUsing3PServices, isClaudeAISubscriber } from './utils/auth.js'
+import { isLocalFirstMode } from './utils/localFirst.js'
 import { isFirstPartyAnthropicBaseUrl } from './utils/model/providers.js'
 import env from './commands/env/index.js'
 import exit from './commands/exit/index.js'
@@ -250,6 +251,25 @@ export const INTERNAL_ONLY_COMMANDS = [
   agentsPlatform,
   autofixPr,
 ].filter(Boolean)
+
+const LOCAL_FIRST_DISABLED_COMMANDS = new Set([
+  'chrome',
+  'desktop',
+  'extra-usage',
+  'feedback',
+  'login',
+  'logout',
+  'mobile',
+  'rate-limit-options',
+  'release-notes',
+  'remote-control',
+  'upgrade',
+  'web-setup',
+])
+
+function isDisabledInLocalFirst(cmd: Command): boolean {
+  return isLocalFirstMode() && LOCAL_FIRST_DISABLED_COMMANDS.has(cmd.name)
+}
 
 // Declared as a function so that we don't run this until getCommands is called,
 // since underlying functions read from config, which can't be read at module initialization time
@@ -479,7 +499,10 @@ export async function getCommands(cwd: string): Promise<Command[]> {
 
   // Build base commands without dynamic skills
   const baseCommands = allCommands.filter(
-    _ => meetsAvailabilityRequirement(_) && isCommandEnabled(_),
+    _ =>
+      !isDisabledInLocalFirst(_) &&
+      meetsAvailabilityRequirement(_) &&
+      isCommandEnabled(_),
   )
 
   if (dynamicSkills.length === 0) {
@@ -491,6 +514,7 @@ export async function getCommands(cwd: string): Promise<Command[]> {
   const uniqueDynamicSkills = dynamicSkills.filter(
     s =>
       !baseCommandNames.has(s.name) &&
+      !isDisabledInLocalFirst(s) &&
       meetsAvailabilityRequirement(s) &&
       isCommandEnabled(s),
   )

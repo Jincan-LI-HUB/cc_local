@@ -16,6 +16,9 @@ A **locally runnable version** repaired from the leaked Claude Code source, with
 - [Architecture Overview](#architecture-overview)
 - [Quick Start](#quick-start)
 - [Environment Variables](#environment-variables)
+- [Local-First Mode](#local-first-mode)
+- [Router Setup](#router-setup)
+- [Operations Guide](#operations-guide)
 - [Fallback Mode](#fallback-mode)
 - [Computer Use Desktop Control](#computer-use-desktop-control)
 - [FAQ](#faq)
@@ -31,6 +34,7 @@ A **locally runnable version** repaired from the leaked Claude Code source, with
 - `--print` headless mode for scripts and CI
 - MCP server, plugin, and Skills support
 - Custom API endpoint and model support ([Third-Party Models Guide](docs/third-party-models.en.md))
+- `local-first` mode for local gateway deployments without Claude first-party login, remote, update, or feedback surfaces
 - **Computer Use desktop control** (screenshots, mouse, keyboard, app management) — [Guide](docs/computer-use.en.md)
 - Fallback Recovery CLI mode
 
@@ -108,6 +112,8 @@ cp .env.example .env
 Edit `.env` (the example below uses [MiniMax](https://platform.minimaxi.com/subscribe/token-plan?code=1TG2Cseab2&source=link) as the API provider — you can replace it with any compatible service):
 
 ```env
+CLAUDE_CODE_LOCAL_FIRST=1
+
 # API authentication (choose one)
 ANTHROPIC_API_KEY=sk-xxx          # Standard API key via x-api-key header
 ANTHROPIC_AUTH_TOKEN=sk-xxx       # Bearer token via Authorization header
@@ -129,6 +135,66 @@ DISABLE_TELEMETRY=1
 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 ```
 
+## Local-First Mode
+
+If you want to run this fork behind a local model or self-hosted protocol gateway, enable `local-first`:
+
+```env
+CLAUDE_CODE_LOCAL_FIRST=1
+DISABLE_TELEMETRY=1
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+ANTHROPIC_BASE_URL=http://127.0.0.1:3456
+```
+
+This mode disables or hides Anthropic first-party product surfaces by default:
+
+- `/login` and `claude auth`
+- `remote-control`
+- `web-setup`
+- `feedback`, `release-notes`, `upgrade`
+- `chrome`, `desktop`, `mobile`
+
+That keeps the TUI/tooling workflow intact while routing model traffic through a local `Anthropic-compatible` gateway. For the first PoC, prefer [claude-code-router](https://github.com/musistudio/claude-code-router); for benchmarking against the official CLI, [anyclaude](https://github.com/coder/anyclaude) is also a useful reference.
+
+Recommended minimum working flow:
+
+```bash
+npm install -g @musistudio/claude-code-router
+bun run setup:local-first
+bun run dev:local-first
+```
+
+After that, you can run the built-in smoke test:
+
+```bash
+bun run verify:local-first
+```
+
+If you prefer to run the router and frontend separately:
+
+```bash
+bun run router:start
+bun run start:local-first
+```
+
+## Router Setup
+
+This repository now includes ready-to-edit assets for a local router deployment:
+
+- Frontend env template: [.env.local-first.example](./.env.local-first.example)
+- Minimal Ollama router config: [router/claude-code-router/config.ollama.minimal.json](./router/claude-code-router/config.ollama.minimal.json)
+- Hybrid multi-provider config: [router/claude-code-router/config.hybrid.example.json](./router/claude-code-router/config.hybrid.example.json)
+- Provider env template: [router/claude-code-router/providers.env.example](./router/claude-code-router/providers.env.example)
+- Generated local provider env file: `router/claude-code-router/providers.local.env`
+- Launch scripts:
+  [scripts/setup-local-first.ts](./scripts/setup-local-first.ts)
+  [scripts/start-router.ts](./scripts/start-router.ts)
+  [scripts/dev-local-first.ts](./scripts/dev-local-first.ts)
+  [scripts/verify-local-first.ts](./scripts/verify-local-first.ts)
+  [scripts/start-local-first.ps1](./scripts/start-local-first.ps1)
+  [scripts/start-local-first.sh](./scripts/start-local-first.sh)
+- Detailed walkthrough: [docs/router-setup.md](./docs/router-setup.md)
+
 > **Tip**: You can also configure environment variables via the `env` field in `~/.claude/settings.json`. This is consistent with the official Claude Code configuration:
 >
 > ```json
@@ -142,6 +208,12 @@ CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 > ```
 >
 > Priority: Environment variables > `.env` file > `~/.claude/settings.json`
+
+## Operations Guide
+
+For day-to-day usage and maintenance, use:
+
+- [docs/local-first-operations.md](./docs/local-first-operations.md)
 
 ### 4. Start
 

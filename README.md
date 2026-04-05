@@ -16,6 +16,9 @@
 - [架构概览](#架构概览)
 - [快速开始](#快速开始)
 - [环境变量说明](#环境变量说明)
+- [Local-First 模式](#local-first-模式)
+- [Router 接入指南](#router-接入指南)
+- [操作手册](#操作手册)
 - [降级模式](#降级模式)
 - [Computer Use 桌面控制](#computer-use-桌面控制)
 - [常见问题](#常见问题)
@@ -31,6 +34,7 @@
 - `--print` 无头模式（脚本/CI 场景）
 - 支持 MCP 服务器、插件、Skills
 - 支持自定义 API 端点和模型（[第三方模型使用指南](docs/third-party-models.md)）
+- 支持 `local-first` 模式，默认关闭 Claude first-party 登录、远程控制、更新与反馈等能力
 - **Computer Use 桌面控制**（截屏、鼠标、键盘、应用管理）— [使用指南](docs/computer-use.md)
 - 降级 Recovery CLI 模式
 
@@ -108,6 +112,8 @@ cp .env.example .env
 编辑 `.env`（以下示例使用 [MiniMax](https://platform.minimaxi.com/subscribe/token-plan?code=1TG2Cseab2&source=link) 作为 API 提供商，也可替换为其他兼容服务）：
 
 ```env
+CLAUDE_CODE_LOCAL_FIRST=1
+
 # API 认证（二选一）
 ANTHROPIC_API_KEY=sk-xxx          # 标准 API Key（x-api-key 头）
 ANTHROPIC_AUTH_TOKEN=sk-xxx       # Bearer Token（Authorization 头）
@@ -129,6 +135,66 @@ DISABLE_TELEMETRY=1
 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 ```
 
+## Local-First 模式
+
+如果你准备把本项目接到本地模型或自建协议网关，建议开启 `local-first`：
+
+```env
+CLAUDE_CODE_LOCAL_FIRST=1
+DISABLE_TELEMETRY=1
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+ANTHROPIC_BASE_URL=http://127.0.0.1:3456
+```
+
+开启后会默认关闭或隐藏一批 Anthropic first-party 能力：
+
+- `/login`、`claude auth`
+- `remote-control`
+- `web-setup`
+- `feedback`、`release-notes`、`upgrade`
+- `chrome`、`desktop`、`mobile`
+
+这样可以保留 Ink TUI、slash commands、MCP、插件和工具调用，同时把模型请求稳定地转发给本地 `Anthropic-compatible` 网关。第一版推荐使用 [claude-code-router](https://github.com/musistudio/claude-code-router) 作为协议路由层；做对照 benchmark 时，也可以参考 [anyclaude](https://github.com/coder/anyclaude)。
+
+推荐的最小可运行流程：
+
+```bash
+npm install -g @musistudio/claude-code-router
+bun run setup:local-first
+bun run dev:local-first
+```
+
+完成后可以跑一次自检：
+
+```bash
+bun run verify:local-first
+```
+
+如果你想把 router 和前端拆开跑：
+
+```bash
+bun run router:start
+bun run start:local-first
+```
+
+## Router 接入指南
+
+仓库里已经附带了一套可直接修改的模板：
+
+- 前端环境模板：[.env.local-first.example](./.env.local-first.example)
+- 最小 Ollama 路由配置：[router/claude-code-router/config.ollama.minimal.json](./router/claude-code-router/config.ollama.minimal.json)
+- 混合 Provider 路由配置：[router/claude-code-router/config.hybrid.example.json](./router/claude-code-router/config.hybrid.example.json)
+- Provider 变量模板：[router/claude-code-router/providers.env.example](./router/claude-code-router/providers.env.example)
+- 自动生成的本地 Provider 变量文件：`router/claude-code-router/providers.local.env`
+- 启动脚本：
+  [scripts/setup-local-first.ts](./scripts/setup-local-first.ts)
+  [scripts/start-router.ts](./scripts/start-router.ts)
+  [scripts/dev-local-first.ts](./scripts/dev-local-first.ts)
+  [scripts/verify-local-first.ts](./scripts/verify-local-first.ts)
+  [scripts/start-local-first.ps1](./scripts/start-local-first.ps1)
+  [scripts/start-local-first.sh](./scripts/start-local-first.sh)
+- 详细说明：[docs/router-setup.md](./docs/router-setup.md)
+
 > **提示**：除了 `.env` 文件，你也可以通过 `~/.claude/settings.json` 的 `env` 字段配置环境变量。这与官方 Claude Code 的配置方式一致：
 >
 > ```json
@@ -142,6 +208,12 @@ CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 > ```
 >
 > 配置优先级：环境变量 > `.env` 文件 > `~/.claude/settings.json`
+
+## 操作手册
+
+如果你要把这套方案当成长期使用的本地部署版本，直接看：
+
+- [docs/local-first-operations.md](./docs/local-first-operations.md)
 
 ### 4. 启动
 

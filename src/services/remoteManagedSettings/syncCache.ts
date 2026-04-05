@@ -16,6 +16,7 @@ import {
   getAPIProvider,
   isFirstPartyAnthropicBaseUrl,
 } from '../../utils/model/providers.js'
+import { isLocalFirstMode } from '../../utils/localFirst.js'
 
 import {
   resetSyncCache as resetLeafCache,
@@ -48,6 +49,10 @@ export function resetSyncCache(): void {
  */
 export function isRemoteManagedSettingsEligible(): boolean {
   if (cached !== undefined) return cached
+
+  if (isLocalFirstMode()) {
+    return (cached = setEligibility(false))
+  }
 
   if (process.env.CLAUDE_CODE_LOCAL_SKIP_REMOTE_PREFETCH === '1') {
     return (cached = setEligibility(false))

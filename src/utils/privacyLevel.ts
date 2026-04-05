@@ -1,3 +1,5 @@
+import { LOCAL_FIRST_ENV_VAR, isLocalFirstMode } from './localFirst.js'
+
 /**
  * Privacy level controls how much nonessential network traffic and telemetry
  * Claude Code generates.
@@ -18,6 +20,9 @@
 type PrivacyLevel = 'default' | 'no-telemetry' | 'essential-traffic'
 
 export function getPrivacyLevel(): PrivacyLevel {
+  if (isLocalFirstMode()) {
+    return 'essential-traffic'
+  }
   if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
     return 'essential-traffic'
   }
@@ -48,6 +53,9 @@ export function isTelemetryDisabled(): boolean {
  * or null if unrestricted. Used for user-facing "unset X to re-enable" messages.
  */
 export function getEssentialTrafficOnlyReason(): string | null {
+  if (isLocalFirstMode()) {
+    return LOCAL_FIRST_ENV_VAR
+  }
   if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
     return 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'
   }

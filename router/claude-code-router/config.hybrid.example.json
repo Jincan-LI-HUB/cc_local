@@ -1,0 +1,51 @@
+{
+  "LOG": true,
+  "LOG_LEVEL": "debug",
+  "HOST": "127.0.0.1",
+  "API_TIMEOUT_MS": 600000,
+  "Providers": [
+    {
+      "name": "ollama",
+      "api_base_url": "http://127.0.0.1:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": ["$OLLAMA_MODEL", "$OLLAMA_THINK_MODEL", "$OLLAMA_GENERAL_MODEL"]
+    },
+    {
+      "name": "openai",
+      "api_base_url": "https://api.openai.com/v1/chat/completions",
+      "api_key": "$OPENAI_API_KEY",
+      "models": ["$OPENAI_MODEL", "$OPENAI_LONG_CONTEXT_MODEL"]
+    },
+    {
+      "name": "deepseek",
+      "api_base_url": "https://api.deepseek.com/chat/completions",
+      "api_key": "$DEEPSEEK_API_KEY",
+      "models": ["$DEEPSEEK_MODEL", "$DEEPSEEK_REASONING_MODEL"],
+      "transformer": {
+        "use": ["deepseek"],
+        "$DEEPSEEK_MODEL": {
+          "use": ["tooluse"]
+        }
+      }
+    },
+    {
+      "name": "dashscope",
+      "api_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "api_key": "$DASHSCOPE_API_KEY",
+      "models": ["$QWEN_MODEL"],
+      "transformer": {
+        "use": [
+          ["maxtoken", { "max_tokens": 65536 }],
+          "enhancetool"
+        ]
+      }
+    }
+  ],
+  "Router": {
+    "default": "$ROUTER_DEFAULT",
+    "background": "$ROUTER_BACKGROUND",
+    "think": "$ROUTER_THINK",
+    "longContext": "$ROUTER_LONG_CONTEXT",
+    "longContextThreshold": 60000
+  }
+}

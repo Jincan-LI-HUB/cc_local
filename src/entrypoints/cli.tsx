@@ -1,4 +1,5 @@
 import { feature } from 'bun:bundle';
+import { isLocalFirstMode } from '../utils/localFirst.js';
 
 // Bugfix for corepack auto-pinning, which adds yarnpkg to peoples' package.jsons
 // eslint-disable-next-line custom-rules/no-top-level-side-effects
@@ -110,6 +111,11 @@ async function main(): Promise<void> {
   // feature() must stay inline for build-time dead code elimination;
   // isBridgeEnabled() checks the runtime GrowthBook gate.
   if (feature('BRIDGE_MODE') && (args[0] === 'remote-control' || args[0] === 'rc' || args[0] === 'remote' || args[0] === 'sync' || args[0] === 'bridge')) {
+    if (isLocalFirstMode()) {
+      // biome-ignore lint/suspicious/noConsole:: intentional console output
+      console.error('Remote Control is disabled in local-first mode.');
+      process.exit(1);
+    }
     profileCheckpoint('cli_bridge_path');
     const {
       enableConfigs

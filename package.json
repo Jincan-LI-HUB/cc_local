@@ -8,7 +8,16 @@
   },
   "scripts": {
     "claude-haha": "bun run ./bin/claude-haha",
-    "start": "bun run ./bin/claude-haha"
+    "start": "bun run ./bin/claude-haha",
+    "setup:local-first": "bun ./scripts/setup-local-first.ts",
+    "router:start": "bun ./scripts/start-router.ts",
+    "router:start:hybrid": "bun ./scripts/start-router.ts --hybrid",
+    "router:stop": "bun ./scripts/start-router.ts --stop",
+    "router:status": "bun ./scripts/start-router.ts --status",
+    "dev:local-first": "bun ./scripts/dev-local-first.ts",
+    "verify:local-first": "bun ./scripts/verify-local-first.ts",
+    "start:local-first": "bun ./scripts/start-local-first.ts",
+    "print:local-first": "bun ./scripts/start-local-first.ts -p"
   },
   "dependencies": {
     "@anthropic-ai/sandbox-runtime": "^0.0.44",

@@ -1,6 +1,8 @@
 .env
 .env.*
 !.env.example
+!.env.local-first.example
+router/claude-code-router/providers.local.env
 node_modules
 
 # Computer Use runtime (auto-generated)
