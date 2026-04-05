@@ -76,6 +76,8 @@ import {
 import { sleep } from './sleep.js'
 import { jsonParse } from './slowOperations.js'
 import { clearToolSchemaCache } from './toolSchemaCache.js'
+import { isLocalFirstMode } from './localFirst.js'
+import { isAnthropicCompatibleProxy } from './model/providers.js'
 
 /** Default TTL for API key helper cache in milliseconds (5 minutes) */
 const DEFAULT_API_KEY_HELPER_TTL = 5 * 60 * 1000
@@ -98,6 +100,10 @@ function isManagedOAuthContext(): boolean {
 /** Whether we are supporting direct 1P auth. */
 // this code is closely related to getAuthTokenSource
 export function isAnthropicAuthEnabled(): boolean {
+  if (isLocalFirstMode() || isAnthropicCompatibleProxy()) {
+    return false
+  }
+
   // --bare: API-key-only, never OAuth.
   if (isBareMode()) return false
 
@@ -242,6 +248,20 @@ export function getAnthropicApiKeyWithSource(
           ? null
           : getApiKeyFromApiKeyHelperCached(),
         source: 'apiKeyHelper',
+      }
+    }
+    return { key: null, source: 'none' }
+  }
+
+  if (isLocalFirstMode() || isAnthropicCompatibleProxy()) {
+    if (process.env.ANTHROPIC_API_KEY) {
+      return { key: process.env.ANTHROPIC_API_KEY, source: 'ANTHROPIC_API_KEY' }
+    }
+    const apiKeyFromFd = getApiKeyFromFileDescriptor()
+    if (apiKeyFromFd) {
+      return {
+        key: apiKeyFromFd,
+        source: 'ANTHROPIC_API_KEY',
       }
     }
     return { key: null, source: 'none' }
@@ -1253,6 +1273,10 @@ export function saveOAuthTokensIfNeeded(tokens: OAuthTokens): {
 }
 
 export const getClaudeAIOAuthTokens = memoize((): OAuthTokens | null => {
+  if (isLocalFirstMode() || isAnthropicCompatibleProxy()) {
+    return null
+  }
+
   // --bare: API-key-only. No OAuth env tokens, no keychain, no credentials file.
   if (isBareMode()) return null
 
@@ -1397,6 +1421,10 @@ async function handleOAuth401ErrorImpl(
  * (which don't hit the keychain), and only uses async for storage reads.
  */
 export async function getClaudeAIOAuthTokensAsync(): Promise<OAuthTokens | null> {
+  if (isLocalFirstMode() || isAnthropicCompatibleProxy()) {
+    return null
+  }
+
   if (isBareMode()) return null
 
   // Env var and FD tokens are sync and don't hit the keychain

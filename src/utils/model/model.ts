@@ -23,7 +23,7 @@ import { getModelStrings, resolveOverriddenModel } from './modelStrings.js'
 import { formatModelPricing, getOpus46CostTier } from '../modelCost.js'
 import { getSettings_DEPRECATED } from '../settings/settings.js'
 import type { PermissionMode } from '../permissions/PermissionMode.js'
-import { getAPIProvider } from './providers.js'
+import { getAPIProvider, shouldTreatAnthropicProviderAsCustom } from './providers.js'
 import { LIGHTNING_BOLT } from '../../constants/figures.js'
 import { isModelAllowed } from './modelAllowlist.js'
 import { type ModelAlias, isModelAlias } from './aliases.js'
@@ -121,7 +121,7 @@ export function getDefaultSonnetModel(): ModelName {
     return process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
   }
   // Default to Sonnet 4.5 for 3P since they may not have 4.6 yet
-  if (getAPIProvider() !== 'firstParty') {
+  if (shouldTreatAnthropicProviderAsCustom() || getAPIProvider() !== 'firstParty') {
     return getModelStrings().sonnet45
   }
   return getModelStrings().sonnet46
@@ -286,6 +286,12 @@ export function getCanonicalName(fullModelName: ModelName): ModelShortName {
 export function getClaudeAiUserDefaultModelDescription(
   fastMode = false,
 ): string {
+  if (shouldTreatAnthropicProviderAsCustom()) {
+    return (
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION ??
+      renderModelName(getDefaultSonnetModel())
+    )
+  }
   if (isMaxSubscriber() || isTeamPremiumSubscriber()) {
     if (isOpus1mMergeEnabled()) {
       return `Opus 4.6 with 1M context · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`
@@ -299,6 +305,9 @@ export function renderDefaultModelSetting(
   setting: ModelName | ModelAlias,
 ): string {
   if (setting === 'opusplan') {
+    if (shouldTreatAnthropicProviderAsCustom()) {
+      return `${renderModelName(getDefaultOpusModel())} in plan mode, else ${renderModelName(getDefaultSonnetModel())}`
+    }
     return 'Opus 4.6 in plan mode, else Sonnet 4.6'
   }
   return renderModelName(parseUserSpecifiedModel(setting))
@@ -347,6 +356,30 @@ export function renderModelSetting(setting: ModelName | ModelAlias): string {
  * if the model is not recognized as a public model.
  */
 export function getPublicModelDisplayName(model: ModelName): string | null {
+  const normalizedModel = model.toLowerCase()
+  const customDisplays = [
+    {
+      model: process.env.ANTHROPIC_DEFAULT_OPUS_MODEL,
+      label: process.env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME,
+    },
+    {
+      model: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL,
+      label: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME,
+    },
+    {
+      model: process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL,
+      label: process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME,
+    },
+  ]
+  for (const entry of customDisplays) {
+    if (
+      entry.model &&
+      entry.label &&
+      normalizedModel === entry.model.toLowerCase()
+    ) {
+      return entry.label
+    }
+  }
   switch (model) {
     case getModelStrings().opus46:
       return 'Opus 4.6'
@@ -568,6 +601,31 @@ export function modelDisplayString(model: ModelSetting): string {
 
 // @[MODEL LAUNCH]: Add a marketing name mapping for the new model below.
 export function getMarketingNameForModel(modelId: string): string | undefined {
+  const normalizedModelId = modelId.toLowerCase()
+  const customDisplays = [
+    {
+      model: process.env.ANTHROPIC_DEFAULT_OPUS_MODEL,
+      label: process.env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME,
+    },
+    {
+      model: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL,
+      label: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME,
+    },
+    {
+      model: process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL,
+      label: process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME,
+    },
+  ]
+  for (const entry of customDisplays) {
+    if (
+      entry.model &&
+      entry.label &&
+      normalizedModelId === entry.model.toLowerCase()
+    ) {
+      return entry.label
+    }
+  }
+
   if (getAPIProvider() === 'foundry') {
     // deployment ID is user-defined in Foundry, so it may have no relation to the actual model
     return undefined

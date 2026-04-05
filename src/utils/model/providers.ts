@@ -1,5 +1,6 @@
 import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from '../../services/analytics/index.js'
 import { isEnvTruthy } from '../envUtils.js'
+import { isLocalFirstMode } from '../localFirst.js'
 
 export type APIProvider = 'firstParty' | 'bedrock' | 'vertex' | 'foundry'
 
@@ -15,6 +16,14 @@ export function getAPIProvider(): APIProvider {
 
 export function getAPIProviderForStatsig(): AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS {
   return getAPIProvider() as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS
+}
+
+export function isAnthropicCompatibleProxy(): boolean {
+  return getAPIProvider() === 'firstParty' && !isFirstPartyAnthropicBaseUrl()
+}
+
+export function shouldTreatAnthropicProviderAsCustom(): boolean {
+  return isLocalFirstMode() || isAnthropicCompatibleProxy()
 }
 
 /**

@@ -4,17 +4,22 @@ import { feature } from 'bun:bundle'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js'
 import { logForDebugging } from '../utils/debug.js'
 import { isEnvDefinedFalsy } from '../utils/envUtils.js'
+import { isLocalFirstMode } from '../utils/localFirst.js'
 import { getAPIProvider } from '../utils/model/providers.js'
 import { getWorkload } from '../utils/workloadContext.js'
 
 const DEFAULT_PREFIX = `You are Claude Code, Anthropic's official CLI for Claude.`
 const AGENT_SDK_CLAUDE_CODE_PRESET_PREFIX = `You are Claude Code, Anthropic's official CLI for Claude, running within the Claude Agent SDK.`
 const AGENT_SDK_PREFIX = `You are a Claude agent, built on Anthropic's Claude Agent SDK.`
+const LOCAL_FIRST_PREFIX = `You are a Claude Code-style local coding assistant running through an Anthropic-compatible gateway. Be transparent that you are using the user's configured local or routed model, not Anthropic's hosted Claude service.`
+const LOCAL_FIRST_AGENT_SDK_PREFIX = `You are a Claude Code-style local coding assistant running within the Claude Agent SDK through an Anthropic-compatible gateway. Be transparent that you are using the user's configured local or routed model, not Anthropic's hosted Claude service.`
 
 const CLI_SYSPROMPT_PREFIX_VALUES = [
   DEFAULT_PREFIX,
   AGENT_SDK_CLAUDE_CODE_PRESET_PREFIX,
   AGENT_SDK_PREFIX,
+  LOCAL_FIRST_PREFIX,
+  LOCAL_FIRST_AGENT_SDK_PREFIX,
 ] as const
 
 export type CLISyspromptPrefix = (typeof CLI_SYSPROMPT_PREFIX_VALUES)[number]
@@ -31,6 +36,11 @@ export function getCLISyspromptPrefix(options?: {
   isNonInteractive: boolean
   hasAppendSystemPrompt: boolean
 }): CLISyspromptPrefix {
+  if (isLocalFirstMode()) {
+    return options?.isNonInteractive
+      ? LOCAL_FIRST_AGENT_SDK_PREFIX
+      : LOCAL_FIRST_PREFIX
+  }
   const apiProvider = getAPIProvider()
   if (apiProvider === 'vertex') {
     return DEFAULT_PREFIX

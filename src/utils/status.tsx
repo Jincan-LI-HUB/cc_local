@@ -11,7 +11,7 @@ import { getDisplayPath } from './file.js';
 import { formatNumber } from './format.js';
 import { getIdeClientName, type IDEExtensionInstallationStatus, isJetBrainsIde, toIDEDisplayName } from './ide.js';
 import { getClaudeAiUserDefaultModelDescription, modelDisplayString } from './model/model.js';
-import { getAPIProvider } from './model/providers.js';
+import { getAPIProvider, shouldTreatAnthropicProviderAsCustom } from './model/providers.js';
 import { getMTLSConfig } from './mtls.js';
 import { checkInstall } from './nativeInstaller/index.js';
 import { getProxyUrl } from './proxy.js';
@@ -240,6 +240,20 @@ export function buildAccountProperties(): Property[] {
 export function buildAPIProviderProperties(): Property[] {
   const apiProvider = getAPIProvider();
   const properties: Property[] = [];
+  if (shouldTreatAnthropicProviderAsCustom()) {
+    properties.push({
+      label: 'API provider',
+      value: 'Anthropic-compatible gateway'
+    });
+    const anthropicBaseUrl = process.env.ANTHROPIC_BASE_URL;
+    if (anthropicBaseUrl) {
+      properties.push({
+        label: 'Gateway URL',
+        value: anthropicBaseUrl
+      });
+    }
+    return properties;
+  }
   if (apiProvider !== 'firstParty') {
     const providerLabel = {
       bedrock: 'AWS Bedrock',

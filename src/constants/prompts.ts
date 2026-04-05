@@ -448,8 +448,11 @@ export async function getSystemPrompt(
   mcpClients?: MCPServerConnection[],
 ): Promise<string[]> {
   if (isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
+    const identity = isEnvTruthy(process.env.CLAUDE_CODE_LOCAL_FIRST)
+      ? `You are a Claude Code-style local coding assistant running through an Anthropic-compatible gateway. Be transparent that you are using the user's configured local or routed model, not Anthropic's hosted Claude service.`
+      : `You are Claude Code, Anthropic's official CLI for Claude.`
     return [
-      `You are Claude Code, Anthropic's official CLI for Claude.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
+      `${identity}\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
     ]
   }
 

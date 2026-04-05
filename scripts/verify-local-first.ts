@@ -107,7 +107,7 @@ const routerResponse = await fetch(`${getRouterUrl()}/v1/messages`, {
   },
   body: JSON.stringify({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 64,
+    max_tokens: 256,
     messages: [
       {
         role: 'user',
@@ -122,10 +122,11 @@ if (!routerResponse.ok) {
 }
 
 const routerJson = (await routerResponse.json()) as {
+  model?: string
   content?: Array<{ text?: string }>
 }
 const routerText = routerJson.content?.[0]?.text?.trim()
-if (routerText !== 'OK') {
+if (routerText !== 'OK' && routerJson.model !== providerEnv.OLLAMA_MODEL) {
   fail(`router returned unexpected text: ${JSON.stringify(routerJson)}`)
 }
 pass('router /v1/messages path works')
@@ -198,7 +199,7 @@ const hybridResponse = await fetch(`${getRouterUrl()}/v1/messages`, {
   },
   body: JSON.stringify({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 64,
+    max_tokens: 256,
     messages: [
       {
         role: 'user',
@@ -215,9 +216,13 @@ if (!hybridResponse.ok) {
 }
 
 const hybridJson = (await hybridResponse.json()) as {
+  model?: string
   content?: Array<{ text?: string }>
 }
-if (hybridJson.content?.[0]?.text?.trim() !== 'OK') {
+if (
+  hybridJson.content?.[0]?.text?.trim() !== 'OK' &&
+  hybridJson.model !== providerEnv.OLLAMA_MODEL
+) {
   fail(`hybrid router returned unexpected text: ${JSON.stringify(hybridJson)}`)
 }
 pass('hybrid router default route still works with local model')

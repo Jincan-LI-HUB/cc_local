@@ -21,11 +21,20 @@
 
 ## 当前这台机器的推荐本地模型分工
 
-根据当前已安装模型，推荐分工是：
+根据当前已安装模型，脚本会优先选择“支持 tools 的本地模型”作为默认交互模型。
 
-- 默认 coding：`deepseek-coder:6.7b`
+当前这台机器的推荐分工是：
+
+- 默认 coding / 交互：`qwen3.5:35b`
 - think / 重推理：`qwen3.5:35b`
 - general / 长上下文 / 普通对话：`gemma4:31b`
+- 备选非默认：`deepseek-coder:6.7b`
+
+说明：
+
+- `deepseek-coder:6.7b` 当前会拒绝 OpenAI/Anthropic 兼容工具调用参数
+- 而 `claude-code-haha` 的真实工作流会频繁带上工具 schema
+- 所以为了保留 Claude Code 的操作手感，默认路由必须优先选支持 tools 的模型
 
 这套分工已经被脚本自动识别并写入：
 
@@ -163,11 +172,11 @@ bun run verify:local-first
 当前推荐本地配置：
 
 ```env
-OLLAMA_MODEL=deepseek-coder:6.7b
+OLLAMA_MODEL=qwen3.5:35b
 OLLAMA_THINK_MODEL=qwen3.5:35b
 OLLAMA_GENERAL_MODEL=gemma4:31b
-ROUTER_DEFAULT=ollama,deepseek-coder:6.7b
-ROUTER_BACKGROUND=ollama,deepseek-coder:6.7b
+ROUTER_DEFAULT=ollama,qwen3.5:35b
+ROUTER_BACKGROUND=ollama,qwen3.5:35b
 ROUTER_THINK=ollama,qwen3.5:35b
 ROUTER_LONG_CONTEXT=ollama,gemma4:31b
 ```
@@ -229,8 +238,8 @@ bun run start:local-first
 推荐：
 
 ```env
-ROUTER_DEFAULT=ollama,deepseek-coder:6.7b
-ROUTER_BACKGROUND=ollama,deepseek-coder:6.7b
+ROUTER_DEFAULT=ollama,qwen3.5:35b
+ROUTER_BACKGROUND=ollama,qwen3.5:35b
 ROUTER_THINK=ollama,qwen3.5:35b
 ROUTER_LONG_CONTEXT=ollama,gemma4:31b
 ```
@@ -245,8 +254,8 @@ ROUTER_LONG_CONTEXT=ollama,gemma4:31b
 推荐：
 
 ```env
-ROUTER_DEFAULT=ollama,deepseek-coder:6.7b
-ROUTER_BACKGROUND=ollama,deepseek-coder:6.7b
+ROUTER_DEFAULT=ollama,qwen3.5:35b
+ROUTER_BACKGROUND=ollama,qwen3.5:35b
 ROUTER_THINK=deepseek,deepseek-reasoner
 ROUTER_LONG_CONTEXT=ollama,gemma4:31b
 ```
