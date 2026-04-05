@@ -2,6 +2,7 @@ import { existsSync } from 'fs'
 import { spawn } from 'child_process'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+import { buildLocalFirstCliEnv } from './local-first-utils.js'
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)))
 const envFile = join(rootDir, '.env.local-first')
@@ -16,9 +17,13 @@ if (!existsSync(envFile)) {
 
 const child = spawn(
   bunExecutable,
-  ['--env-file=.env.local-first', './src/entrypoints/cli.tsx', ...process.argv.slice(2)],
+  ['./src/entrypoints/cli.tsx', ...process.argv.slice(2)],
   {
     cwd: rootDir,
+    env: {
+      ...process.env,
+      ...buildLocalFirstCliEnv(),
+    },
     stdio: 'inherit',
   },
 )

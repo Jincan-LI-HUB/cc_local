@@ -16,6 +16,7 @@
     "router:status": "bun ./scripts/start-router.ts --status",
     "dev:local-first": "bun ./scripts/dev-local-first.ts",
     "verify:local-first": "bun ./scripts/verify-local-first.ts",
+    "mcp:import:desktop": "bun ./scripts/import-claude-desktop-mcp.ts",
     "start:local-first": "bun ./scripts/start-local-first.ts",
     "print:local-first": "bun ./scripts/start-local-first.ts -p"
   },

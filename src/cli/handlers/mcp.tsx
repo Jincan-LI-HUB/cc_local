@@ -23,6 +23,30 @@ import { gracefulShutdown } from '../../utils/gracefulShutdown.js';
 import { safeParseJSON } from '../../utils/json.js';
 import { getPlatform } from '../../utils/platform.js';
 import { cliError, cliOk } from '../exit.js';
+function isSensitiveMcpKey(key: string): boolean {
+  return /(token|secret|password|passwd|api[_-]?key|bearer|authorization|cookie|dsn|connection|string|pat)/i.test(key);
+}
+function redactSensitiveMcpValue(value: string): string {
+  if (!value) {
+    return value;
+  }
+  let redacted = value.replace(/(authorization:\s*Bearer\s+)(\S+)/gi, '$1[REDACTED]');
+  redacted = redacted.replace(/(Bearer\s+)(\S+)/gi, '$1[REDACTED]');
+  redacted = redacted.replace(/\b(postgres|postgresql|mysql|mongodb(?:\+srv)?):\/\/\S+/gi, '$1://[REDACTED]');
+  redacted = redacted.replace(/\b(?:github_pat_[A-Za-z0-9_]+|gh[pousr]_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|xox[baprs]-[A-Za-z0-9-]+)\b/g, '[REDACTED]');
+  redacted = redacted.replace(/\b[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{16,}\b/g, '[REDACTED]');
+  redacted = redacted.replace(/\b(?=[A-Z0-9]{12,}\b)(?=.*\d)[A-Z0-9]+\b/g, '[REDACTED]');
+  return redacted;
+}
+function redactMcpArgs(args: string[]): string[] {
+  return args.map(arg => redactSensitiveMcpValue(arg));
+}
+function redactMcpEntry(key: string, value: string): string {
+  if (isSensitiveMcpKey(key)) {
+    return '[REDACTED]';
+  }
+  return redactSensitiveMcpValue(value);
+}
 async function checkMcpServerHealth(name: string, server: ScopedMcpServerConfig): Promise<string> {
   try {
     const result = await connectToServer(name, server);
@@ -176,9 +200,9 @@ export async function mcpListHandler(): Promise<void> {
         console.log(`${name}: ${server.url} (HTTP) - ${status}`);
       } else if (server.type === 'claudeai-proxy') {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
-        console.log(`${name}: ${server.url} - ${status}`);
+        console.log(`${name}: ${redactSensitiveMcpValue(server.url)} - ${status}`);
       } else if (!server.type || server.type === 'stdio') {
-        const args = Array.isArray(server.args) ? server.args : [];
+        const args = redactMcpArgs(Array.isArray(server.args) ? server.args : []);
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`${name}: ${server.command} ${args.join(' ')} - ${status}`);
       }
@@ -214,13 +238,13 @@ export async function mcpGetHandler(name: string): Promise<void> {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Type: sse`);
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.log(`  URL: ${server.url}`);
+    console.log(`  URL: ${redactSensitiveMcpValue(server.url)}`);
     if (server.headers) {
       // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log('  Headers:');
       for (const [key, value] of Object.entries(server.headers)) {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
-        console.log(`    ${key}: ${value}`);
+        console.log(`    ${key}: ${redactMcpEntry(key, value)}`);
       }
     }
     if (server.oauth?.clientId || server.oauth?.callbackPort) {
@@ -238,13 +262,13 @@ export async function mcpGetHandler(name: string): Promise<void> {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Type: http`);
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.log(`  URL: ${server.url}`);
+    console.log(`  URL: ${redactSensitiveMcpValue(server.url)}`);
     if (server.headers) {
       // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log('  Headers:');
       for (const [key, value] of Object.entries(server.headers)) {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
-        console.log(`    ${key}: ${value}`);
+        console.log(`    ${key}: ${redactMcpEntry(key, value)}`);
       }
     }
     if (server.oauth?.clientId || server.oauth?.callbackPort) {
@@ -263,7 +287,7 @@ export async function mcpGetHandler(name: string): Promise<void> {
     console.log(`  Type: stdio`);
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Command: ${server.command}`);
-    const args = Array.isArray(server.args) ? server.args : [];
+    const args = redactMcpArgs(Array.isArray(server.args) ? server.args : []);
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Args: ${args.join(' ')}`);
     if (server.env) {
@@ -271,7 +295,7 @@ export async function mcpGetHandler(name: string): Promise<void> {
       console.log('  Environment:');
       for (const [key, value] of Object.entries(server.env)) {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
-        console.log(`    ${key}=${value}`);
+        console.log(`    ${key}=${redactMcpEntry(key, value)}`);
       }
     }
   }

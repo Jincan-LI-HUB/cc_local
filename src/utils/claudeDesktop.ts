@@ -3,7 +3,7 @@ import { homedir } from 'os'
 import { join } from 'path'
 import {
   type McpServerConfig,
-  McpStdioServerConfigSchema,
+  McpServerConfigSchema,
 } from '../services/mcp/types.js'
 import { getErrnoCode } from './errors.js'
 import { safeParseJSON } from './json.js'
@@ -15,7 +15,7 @@ export async function getClaudeDesktopConfigPath(): Promise<string> {
 
   if (!SUPPORTED_PLATFORMS.includes(platform)) {
     throw new Error(
-      `Unsupported platform: ${platform} - Claude Desktop integration only works on macOS and WSL.`,
+      `Unsupported platform: ${platform} - Claude Desktop integration only works on macOS, Windows, and WSL.`,
     )
   }
 
@@ -24,6 +24,14 @@ export async function getClaudeDesktopConfigPath(): Promise<string> {
       homedir(),
       'Library',
       'Application Support',
+      'Claude',
+      'claude_desktop_config.json',
+    )
+  }
+
+  if (platform === 'windows') {
+    return join(
+      process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'),
       'Claude',
       'claude_desktop_config.json',
     )
@@ -100,7 +108,7 @@ export async function readClaudeDesktopMcpServers(): Promise<
 > {
   if (!SUPPORTED_PLATFORMS.includes(getPlatform())) {
     throw new Error(
-      'Unsupported platform - Claude Desktop integration only works on macOS and WSL.',
+      'Unsupported platform - Claude Desktop integration only works on macOS, Windows, and WSL.',
     )
   }
   try {
@@ -137,7 +145,7 @@ export async function readClaudeDesktopMcpServers(): Promise<
         continue
       }
 
-      const result = McpStdioServerConfigSchema().safeParse(serverConfig)
+      const result = McpServerConfigSchema().safeParse(serverConfig)
 
       if (result.success) {
         servers[name] = result.data

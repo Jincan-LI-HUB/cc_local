@@ -1,5 +1,6 @@
 import { existsSync } from 'fs'
 import {
+  buildLocalFirstCliEnv,
   getRouterUrl,
   localEnvFile,
   providerEnvFile,
@@ -33,8 +34,9 @@ if (!ready) {
 
 const child = spawnCommand(
   bunExecutable,
-  ['--env-file=.env.local-first', './src/entrypoints/cli.tsx', ...process.argv.slice(2)],
+  ['./src/entrypoints/cli.tsx', ...process.argv.slice(2)],
   {
+    env: buildLocalFirstCliEnv(),
     stdio: 'inherit',
   },
 )

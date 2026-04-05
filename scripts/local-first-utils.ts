@@ -8,6 +8,8 @@ export const rootDir = dirname(dirname(fileURLToPath(import.meta.url)))
 export const routerDir = join(rootDir, 'router', 'claude-code-router')
 export const localEnvFile = join(rootDir, '.env.local-first')
 export const localEnvExampleFile = join(rootDir, '.env.local-first.example')
+export const mcpEnvFile = join(rootDir, '.env.mcp.local')
+export const mcpEnvExampleFile = join(rootDir, '.env.mcp.local.example')
 export const providerEnvFile = join(routerDir, 'providers.local.env')
 export const providerEnvExampleFile = join(
   routerDir,
@@ -360,6 +362,13 @@ export async function waitForHttpReady(
 
 export function buildRouterEnv(): Record<string, string> {
   return parseEnvFile(providerEnvFile)
+}
+
+export function buildLocalFirstCliEnv(): Record<string, string> {
+  return {
+    ...parseEnvFile(localEnvFile),
+    ...parseEnvFile(mcpEnvFile),
+  }
 }
 
 export const localFirstEnvOrder = [

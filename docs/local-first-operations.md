@@ -55,6 +55,19 @@ bun run setup:local-first
 - [.env.local-first](../.env.local-first)
 - [providers.local.env](../router/claude-code-router/providers.local.env)
 
+如果你要把桌面版 Claude 的 MCP 迁进当前项目，还可以执行：
+
+```powershell
+bun run mcp:import:desktop
+```
+
+它会额外生成：
+
+- [../.mcp.json](/E:/Workspace/claude-code-haha/.mcp.json)
+- [../.env.mcp.local.example](/E:/Workspace/claude-code-haha/.env.mcp.local.example)
+
+实际 secrets 会进入 `.env.mcp.local`，这个文件默认不会进入 Git。
+
 ## 一键启动
 
 最推荐的启动方式：
@@ -156,6 +169,7 @@ bun run verify:local-first
 文件：
 
 - [.env.local-first](../.env.local-first)
+- [../.env.mcp.local](/E:/Workspace/claude-code-haha/.env.mcp.local)
 
 关键字段：
 
